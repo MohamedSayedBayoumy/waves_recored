@@ -51,29 +51,11 @@ class PlayerWavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     _drawWave(size, canvas);
-    if (playerWaveStyle.showSeekLine && waveformType.isLong) {
-      _drawMiddleLine(size, canvas);
-    }
   }
 
   @override
   bool shouldRepaint(PlayerWavePainter oldDelegate) => true;
 
-  void _drawMiddleLine(Size size, Canvas canvas) {
-    // حساب الموضع الأفقي للدائرة بناءً على تقدم الصوت
-    final currentX = size.width * audioProgress; // الموضع الأفقي للدائرة
-    final centerY = size.height / 2; // الموضع الرأسي (منتصف الشاشة)
-    final radius = size.width * 0.025; // نصف القطر (2.5% من عرض الشاشة)
-
-    // رسم الدائرة
-    canvas.drawCircle(
-      Offset(currentX, centerY),
-      radius,
-      fixedWavePaint
-        ..color = playerWaveStyle.seekLineColor
-        ..style = PaintingStyle.fill, // نملأ الدائرة
-    );
-  }
 
   void _drawWave(Size size, Canvas canvas) {
     final length = waveformData.length;

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 
@@ -156,6 +157,12 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     onCurrentDurationSubscription =
         playerController.onCurrentDurationChanged.listen((event) {
       _seekProgress.value = event;
+      // log(">>>>>>>>>>>>>>>>> seek${_seekProgress.value}");
+      // final silderValue = event / 100;
+      // log(">>>>>>>>>>>>>>>>> silder $silderValue");
+
+      silderStreamController.add(double.parse((event / 100).toString()));
+
       _updatePlayerPercent();
     });
 
@@ -204,48 +211,88 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
 
   final List<double> _waveformData = [];
 
+  // ignore: close_sinks
+  StreamController<double> silderStreamController = StreamController<double>();
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: widget.padding,
       margin: widget.margin,
       decoration: widget.decoration,
       clipBehavior: widget.clipBehavior,
-      child: GestureDetector(
-        onHorizontalDragUpdate:
-            widget.enableSeekGesture ? _handleDragGestures : null,
-        onTapUp: widget.enableSeekGesture ? _handleScrubberSeekStart : null,
-        onHorizontalDragStart:
-            widget.enableSeekGesture ? _handleHorizontalDragStart : null,
-        onHorizontalDragEnd: widget.enableSeekGesture ? _handleOnDragEnd : null,
-        child: ClipPath(
-          // TODO: Update extraClipperHeight when duration labels are added
-          clipper: WaveClipper(extraClipperHeight: 0),
-          child: RepaintBoundary(
-            child: ValueListenableBuilder<int>(
-              builder: (_, __, ___) {
-                return CustomPaint(
-                  isComplex: true,
-                  painter: PlayerWavePainter(
-                    playerWaveStyle: playerWaveStyle,
-                    waveformData: _waveformData,
-                    animValue: _growAnimationProgress,
-                    totalBackDistance: _totalBackDistance,
-                    dragOffset: _dragOffset,
-                    audioProgress: _audioProgress,
-                    callPushback: !_isScrolled,
-                    pushBack: _pushBackWave,
-                    scrollScale: scrollScale,
-                    waveformType: widget.waveformType,
-                    cachedAudioProgress: _cachedAudioProgress,
+      child: Stack(
+        children: [
+          Container(
+            color: Colors.amber,
+            child: GestureDetector(
+              onHorizontalDragUpdate:
+                  widget.enableSeekGesture ? _handleDragGestures : null,
+              onTapUp:
+                  widget.enableSeekGesture ? _handleScrubberSeekStart : null,
+              onHorizontalDragStart:
+                  widget.enableSeekGesture ? _handleHorizontalDragStart : null,
+              onHorizontalDragEnd:
+                  widget.enableSeekGesture ? _handleOnDragEnd : null,
+              child: ClipPath(
+                clipper: WaveClipper(extraClipperHeight: 0),
+                child: RepaintBoundary(
+                  child: ValueListenableBuilder<int>(
+                    builder: (_, __, ___) {
+                      return CustomPaint(
+                        isComplex: true,
+                        painter: PlayerWavePainter(
+                          playerWaveStyle: playerWaveStyle,
+                          waveformData: _waveformData,
+                          animValue: _growAnimationProgress,
+                          totalBackDistance: _totalBackDistance,
+                          dragOffset: _dragOffset,
+                          audioProgress: _audioProgress,
+                          callPushback: !_isScrolled,
+                          pushBack: _pushBackWave,
+                          scrollScale: scrollScale,
+                          waveformType: widget.waveformType,
+                          cachedAudioProgress: _cachedAudioProgress,
+                        ),
+                        size: widget.size,
+                      );
+                    },
+                    valueListenable: _seekProgress,
                   ),
-                  size: widget.size,
-                );
-              },
-              valueListenable: _seekProgress,
+                ),
+              ),
             ),
           ),
-        ),
+          Positioned.fill(
+            child: StreamBuilder<double>(
+                stream: silderStreamController.stream,
+                builder: (context, snapshot) {
+                  return SliderTheme(
+                    data: SliderThemeData(
+                      activeTrackColor: Colors.transparent,
+                      inactiveTrackColor: Colors.transparent,
+                      thumbColor: Colors.white,
+                      trackHeight: 2.0,
+                      thumbShape:
+                          const RoundSliderThumbShape(enabledThumbRadius: 8.0),
+                      overlayColor: Colors.transparent,
+                      trackShape: CustomTrackShape(),
+                    ),
+                    child: Slider(
+                      min: 0.0,
+                      value: snapshot.hasData ? snapshot.data! : 0.0,
+                      // ignore: unnecessary_null_comparison
+                      max: snapshot.hasData
+                          ? (playerController.maxDuration / 100)
+                          : 0.0,
+                      onChanged: (newValue) {
+                        silderStreamController.add(newValue);
+                        _seekProgress.value = int.parse(newValue.toString());
+                      },
+                    ),
+                  );
+                }),
+          ),
+        ],
       ),
     );
   }
@@ -262,6 +309,8 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
   }
 
   void _handleOnDragEnd(DragEndDetails dragEndDetails) {
+    log("_handleOnDragEnd>>>>>>>>>>");
+
     _isScrolled = false;
     scrollScale = 1.0;
     if (mounted) setState(() {});
@@ -402,5 +451,22 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
         setState(() {});
       }
     });
+  }
+}
+
+class CustomTrackShape extends RoundedRectSliderTrackShape {
+  @override
+  Rect getPreferredRect({
+    required RenderBox parentBox,
+    Offset offset = Offset.zero,
+    required SliderThemeData sliderTheme,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+  }) {
+    final trackHeight = sliderTheme.trackHeight;
+    final trackLeft = offset.dx;
+    final trackTop = offset.dy + (parentBox.size.height - trackHeight!) / 2;
+    final trackWidth = parentBox.size.width;
+    return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
   }
 }

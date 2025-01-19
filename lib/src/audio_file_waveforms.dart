@@ -154,12 +154,10 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     _growingWaveController
       ..forward()
       ..addListener(_updateGrowAnimationProgress);
+
     onCurrentDurationSubscription =
         playerController.onCurrentDurationChanged.listen((event) {
       _seekProgress.value = event;
-      // log(">>>>>>>>>>>>>>>>> seek${_seekProgress.value}");
-      // final silderValue = event / 100;
-      // log(">>>>>>>>>>>>>>>>> silder $silderValue");
 
       silderStreamController.add(double.parse((event / 100).toString()));
 
@@ -280,13 +278,16 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
                     child: Slider(
                       min: 0.0,
                       value: snapshot.hasData ? snapshot.data! : 0.0,
-                      // ignore: unnecessary_null_comparison
                       max: snapshot.hasData
                           ? (playerController.maxDuration / 100)
                           : 0.0,
                       onChanged: (newValue) {
-                        silderStreamController.add(newValue);
-                        _seekProgress.value = int.parse(newValue.toString());
+                        // silderStreamController.add(newValue);
+                        _seekProgress.value =
+                            (newValue * playerController.maxDuration / 100)
+                                .toInt();
+
+                        playerController.seekTo(_seekProgress.value);
                       },
                     ),
                   );

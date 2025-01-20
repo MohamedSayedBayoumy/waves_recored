@@ -83,6 +83,10 @@ class AudioFileWaveforms extends StatefulWidget {
   ///
   /// With seeking gesture enabled, playing audio can be seeked to
   /// any position using gestures.
+  ///
+
+  final String fileSize;
+  final TextStyle? style;
   const AudioFileWaveforms({
     super.key,
     required this.size,
@@ -103,6 +107,8 @@ class AudioFileWaveforms extends StatefulWidget {
     this.onDragEnd,
     this.dragUpdateDetails,
     this.tapUpUpdateDetails,
+    this.fileSize = "",
+    this.style,
   });
 
   @override
@@ -159,7 +165,9 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
         playerController.onCurrentDurationChanged.listen((event) {
       _seekProgress.value = event;
 
-      silderStreamController.add(double.parse((event / 100).toString()));
+      silderStreamController.add(event);
+
+      timerStreamController.add(event);
 
       _updatePlayerPercent();
     });
@@ -182,6 +190,9 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
             .listen(_addWaveformData);
       }
     }
+    WidgetsBinding.instance.addPostFrameCallback((time) async {
+      await getduration();
+    });
   }
 
   @override
@@ -191,6 +202,9 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     onCompletionSubscription.cancel();
     playerController.removeListener(_addWaveformDataFromController);
     _growingWaveController.dispose();
+    silderStreamController.close();
+    timerStreamController.close();
+
     super.dispose();
   }
 
@@ -210,7 +224,17 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
   final List<double> _waveformData = [];
 
   // ignore: close_sinks
-  StreamController<double> silderStreamController = StreamController<double>();
+  StreamController<int> timerStreamController = StreamController<int>();
+
+  StreamController<int> silderStreamController = StreamController<int>();
+
+  int durationFile = 0;
+  getduration() async {
+    final duration = await playerController.getDuration();
+    durationFile = duration;
+    log("message>>>>>>>>>>> $durationFile seconds");
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -261,7 +285,7 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
             ),
           ),
           Positioned.fill(
-            child: StreamBuilder<double>(
+            child: StreamBuilder<int>(
                 stream: silderStreamController.stream,
                 builder: (context, snapshot) {
                   return SliderTheme(
@@ -277,15 +301,14 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
                     ),
                     child: Slider(
                       min: 0.0,
-                      value: snapshot.hasData ? snapshot.data! : 0.0,
-                      max: snapshot.hasData
-                          ? (playerController.maxDuration / 100)
-                          : 0.0,
+                      value:
+                          (snapshot.hasData ? snapshot.data! : 0.0).toDouble(),
+                      max: (snapshot.hasData
+                              ? playerController.maxDuration
+                              : 0.0)
+                          .toDouble(),
                       onChanged: (newValue) {
-                        // silderStreamController.add(newValue);
-                        _seekProgress.value =
-                            (newValue * playerController.maxDuration / 100)
-                                .toInt();
+                        _seekProgress.value = newValue.toInt();
 
                         playerController.seekTo(_seekProgress.value);
                       },
@@ -293,9 +316,69 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
                   );
                 }),
           ),
+          Positioned(
+            bottom: 0.0,
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  if (widget.fileSize.isNotEmpty &&
+                      widget.playerController.playerState.isInitialised) ...[
+                    Text(
+                      widget.fileSize,
+                      style: widget.style,
+                    )
+                  ],
+                  if ((widget.playerController.playerState.isInitialised &&
+                          widget.fileSize.isEmpty) ||
+                      widget.playerController.playerState.isStopped) ...[
+                    Text(
+                      formatDuration(durationFile),
+                      style: widget.style,
+                    )
+                  ],
+                  if (widget.playerController.playerState.isPlaying ||
+                      widget.playerController.playerState.isPaused) ...[
+                    StreamBuilder<int>(
+                        stream: timerStreamController.stream,
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData == false) {
+                            return Text(
+                              formatDuration(durationFile),
+                              style: widget.style,
+                            );
+                          }
+
+                          return Text(
+                            formatDuration(snapshot.data!),
+                            style: widget.style,
+                          );
+                        }),
+                  ]
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  String formatDuration(int milliseconds) {
+    Duration duration = Duration(milliseconds: milliseconds);
+
+    // استخراج الساعات، الدقائق، والثواني
+    int hours = duration.inHours;
+    int minutes = duration.inMinutes % 60;
+    int seconds = duration.inSeconds % 60;
+
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:'
+          '${minutes.toString().padLeft(2, '0')}:'
+          '${seconds.toString().padLeft(2, '0')}';
+    } else {
+      return '${minutes.toString().padLeft(2, '0')}:'
+          '${seconds.toString().padLeft(2, '0')}';
+    }
   }
 
   void _addWaveformDataFromController() =>
@@ -409,6 +492,8 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
 
   /// This initialises variable in [initState] so that everytime current duration
   /// gets updated it doesn't re assign them to same values.
+  ///
+
   void _initialiseVariables() {
     if (playerController.waveformData.isEmpty) {
       playerController.waveformData.addAll(widget.waveformData);

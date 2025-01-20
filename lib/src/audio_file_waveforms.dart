@@ -174,6 +174,8 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
 
     onCompletionSubscription = playerController.onCompletion.listen((event) {
       _seekProgress.value = playerController.maxDuration;
+      silderStreamController.close();
+      silderStreamController = StreamController<int>();
       _updatePlayerPercent();
     });
     if (widget.waveformData.isNotEmpty) {
@@ -232,7 +234,6 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
   getduration() async {
     final duration = await playerController.getDuration();
     durationFile = duration;
-    log("message>>>>>>>>>>> $durationFile seconds");
     setState(() {});
   }
 
@@ -254,7 +255,7 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
                     painter: PlayerWavePainter(
                       playerWaveStyle: playerWaveStyle,
                       waveformData: _waveformData,
-                       animValue: _growAnimationProgress,
+                      animValue: _growAnimationProgress,
                       totalBackDistance: _totalBackDistance,
                       dragOffset: _dragOffset,
                       audioProgress: _audioProgress,

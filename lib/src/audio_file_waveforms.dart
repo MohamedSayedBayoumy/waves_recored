@@ -304,23 +304,12 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
             child: IntrinsicHeight(
               child: Column(
                 children: [
-                  if (widget.fileSize.isNotEmpty &&
-                      widget.playerController.playerState.isInitialised) ...[
+                  if (widget.fileSize.isNotEmpty) ...[
                     Text(
                       widget.fileSize,
                       style: widget.style,
                     )
-                  ],
-                  if ((widget.playerController.playerState.isInitialised &&
-                          widget.fileSize.isEmpty) ||
-                      widget.playerController.playerState.isStopped) ...[
-                    Text(
-                      formatDuration(durationFile),
-                      style: widget.style,
-                    )
-                  ],
-                  if (widget.playerController.playerState.isPlaying ||
-                      widget.playerController.playerState.isPaused) ...[
+                  ] else ...[
                     StreamBuilder<int>(
                         stream: timerStreamController.stream,
                         builder: (context, snapshot) {

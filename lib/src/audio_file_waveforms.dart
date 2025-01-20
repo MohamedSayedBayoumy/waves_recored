@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 
@@ -173,7 +172,7 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     });
 
     onCompletionSubscription = playerController.onCompletion.listen((event) {
-      _seekProgress.value = playerController.maxDuration;
+      // _seekProgress.value = playerController.maxDuration;
       silderStreamController.close();
       silderStreamController = StreamController<int>();
       _updatePlayerPercent();
@@ -211,17 +210,13 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
   }
 
   double _audioProgress = 0.0;
-  double _cachedAudioProgress = 0.0;
+  final double _cachedAudioProgress = 0.0;
 
-  Offset _totalBackDistance = Offset.zero;
-  Offset _dragOffset = Offset.zero;
+  final Offset _totalBackDistance = Offset.zero;
+  final Offset _dragOffset = Offset.zero;
 
-  double _initialDragPosition = 0.0;
-  double _scrollDirection = 0.0;
-
-  bool _isScrolled = false;
+  final bool _isScrolled = false;
   double scrollScale = 1.0;
-  double _proportion = 0.0;
 
   final List<double> _waveformData = [];
 
@@ -329,7 +324,8 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
                     StreamBuilder<int>(
                         stream: timerStreamController.stream,
                         builder: (context, snapshot) {
-                          if (snapshot.hasData == false) {
+                          if (snapshot.hasData == false ||
+                              (snapshot.data == 0)) {
                             return Text(
                               formatDuration(durationFile),
                               style: widget.style,
@@ -380,102 +376,11 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     }
   }
 
-  void _handleOnDragEnd(DragEndDetails dragEndDetails) {
-    log("_handleOnDragEnd>>>>>>>>>>");
-
-    _isScrolled = false;
-    scrollScale = 1.0;
-    if (mounted) setState(() {});
-
-    if (widget.waveformType.isLong) {
-      playerController.seekTo(
-        (playerController.maxDuration * _proportion).toInt(),
-      );
-    }
-    widget.onDragEnd?.call(dragEndDetails);
-  }
-
   void _addWaveformData(List<double> data) {
     _waveformData
       ..clear()
       ..addAll(data);
     if (mounted) setState(() {});
-  }
-
-  void _handleDragGestures(DragUpdateDetails details) {
-    switch (widget.waveformType) {
-      case WaveformType.fitWidth:
-        _handleScrubberSeekUpdate(details);
-        break;
-      case WaveformType.long:
-        _handleScrollUpdate(details);
-        break;
-    }
-
-    widget.dragUpdateDetails?.call(details);
-  }
-
-  /// This method handles continues seek gesture
-  void _handleScrubberSeekUpdate(DragUpdateDetails details) {
-    final localPosition = details.localPosition.dx;
-
-    _proportion = localPosition <= 0 ? 0 : localPosition / widget.size.width;
-    var seekPosition = playerController.maxDuration * _proportion;
-
-    playerController.seekTo(seekPosition.toInt());
-  }
-
-  /// This method handles tap seek gesture
-  void _handleScrubberSeekStart(TapUpDetails details) {
-    _proportion = details.localPosition.dx / widget.size.width;
-    var seekPosition = playerController.maxDuration * _proportion;
-
-    playerController.seekTo(seekPosition.toInt());
-
-    widget.tapUpUpdateDetails?.call(details);
-  }
-
-  ///This method handles horizontal scrolling of the wave
-  void _handleScrollUpdate(DragUpdateDetails details) {
-    // Direction of the scroll. Negative value indicates scroll left to right
-    // and positive value indicates scroll right to left
-    _scrollDirection = details.localPosition.dx - _initialDragPosition;
-    playerController.setRefresh(false);
-    _isScrolled = true;
-
-    scrollScale = playerWaveStyle.scrollScale;
-
-    final spacing = playerWaveStyle.spacing;
-
-    // Update the drag offset based on scroll direction and thresholds.
-    final currentPosition = -_totalBackDistance.dx + _dragOffset.dx;
-    final updatedPosition = currentPosition + details.delta.dx;
-
-    // left to right
-    if (updatedPosition + (spacing) < spacing / 2 && _scrollDirection > 0) {
-      _dragOffset += details.delta;
-    }
-
-    // right to left
-    else if (currentPosition + totalWaveWidth + details.delta.dx >
-            (-spacing / 2) &&
-        _scrollDirection < 0) {
-      _dragOffset += details.delta;
-    }
-
-    // Indicates location of first wave
-    var start = currentPosition - (spacing / 2);
-
-    _proportion = _scrollDirection < 0
-        ? (start.abs() + details.delta.dx) / totalWaveWidth
-        : (details.delta.dx - start - spacing) / totalWaveWidth;
-    if (mounted) setState(() {});
-  }
-
-  ///This will help-out to determine direction of the scroll
-  void _handleHorizontalDragStart(DragStartDetails details) {
-    _initialDragPosition = details.localPosition.dx;
-    widget.onDragStart?.call(details);
   }
 
   /// This initialises variable in [initState] so that everytime current duration
@@ -507,24 +412,24 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
   ///
   ///This will also handle refreshing the wave after scrolled
   void _pushBackWave() {
-    if (!_isScrolled && widget.waveformType.isLong) {
-      _totalBackDistance = Offset(
-          (playerWaveStyle.spacing * _audioProgress * _waveformData.length) +
-              playerWaveStyle.spacing +
-              _dragOffset.dx,
-          0.0);
-    }
-    if (playerController.shouldClearLabels) {
-      _initialDragPosition = 0.0;
-      _totalBackDistance = Offset.zero;
-      _dragOffset = Offset.zero;
-    }
-    _cachedAudioProgress = _audioProgress;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
+    // if (!_isScrolled && widget.waveformType.isLong) {
+    //   _totalBackDistance = Offset(
+    //       (playerWaveStyle.spacing * _audioProgress * _waveformData.length) +
+    //           playerWaveStyle.spacing +
+    //           _dragOffset.dx,
+    //       0.0);
+    // }
+    // if (playerController.shouldClearLabels) {
+    //   _initialDragPosition = 0.0;
+    //   _totalBackDistance = Offset.zero;
+    //   _dragOffset = Offset.zero;
+    // }
+    // _cachedAudioProgress = _audioProgress;
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   if (mounted) {
+    //     setState(() {});
+    //   }
+    // });
   }
 }
 

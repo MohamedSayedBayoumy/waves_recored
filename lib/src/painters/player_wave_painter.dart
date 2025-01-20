@@ -56,35 +56,64 @@ class PlayerWavePainter extends CustomPainter {
   @override
   bool shouldRepaint(PlayerWavePainter oldDelegate) => true;
 
-
   void _drawWave(Size size, Canvas canvas) {
     final length = waveformData.length;
     final halfHeight = size.height * 0.5;
 
+    // خطوة لتقليل عدد النقاط
+    const step = 3; // ارسم كل ثالث نقطة
+    final reducedLength = (length / step).ceil();
+
     // إضافة المسافة بين الموجات
-    final spacing = size.width / (length - 1);
+    final spacing =
+        (size.width - 6.0) / (reducedLength - 1); // حساب المسافة بشكل ديناميكي
 
     if (cachedAudioProgress != audioProgress) {
       pushBack();
     }
 
-    for (int i = 0; i < length; i++) {
-      // حساب الموضع الأفقي لكل موجة
-      final dx = i * spacing;
+    for (int i = 0; i < reducedLength; i++) {
+      // اختيار البيانات بناءً على الـ step
+      final dataIndex = i * step;
+      if (dataIndex >= length) break;
 
-      final waveHeight = (waveformData[i] * animValue) *
-          playerWaveStyle.scaleFactor *
-          scrollScale;
+      // حساب الموضع الأفقي لكل موجة
+      double dx = i * spacing;
+
+      // التأكد من أن الـ dx لا يتجاوز العرض الكامل
+      if (dx > size.width - 6.0) {
+        dx = size.width - 6.0; // ضبط dx في الموجة الأخيرة
+      }
+
+      // حساب ارتفاع الموجة
+      final waveHeight =
+          (waveformData[dataIndex]) * playerWaveStyle.scaleFactor * scrollScale;
       final bottomDy =
           halfHeight + (playerWaveStyle.showBottom ? waveHeight : 0);
       final topDy = halfHeight + (playerWaveStyle.showTop ? -waveHeight : 0);
 
-      // رسم الموجة
-      canvas.drawLine(
-        Offset(dx, bottomDy),
-        Offset(dx, topDy),
-        i < audioProgress * length ? liveWavePaint : fixedWavePaint,
+      // تحقق إذا كانت القيم NaN
+      if (dx.isNaN || bottomDy.isNaN || topDy.isNaN) {
+        continue; // تخطي هذه الموجة إذا كانت تحتوي على NaN
+      }
+
+      // عرض الموجة
+      const double waveWidth = 4.5; // عرض الموجة
+      const double borderRadius = 4.0; // نصف القطر للحواف الدائرية
+
+      // رسم الموجة كـ RRect
+      final paint =
+          i < audioProgress * reducedLength ? liveWavePaint : fixedWavePaint;
+
+      final rrect = RRect.fromLTRBR(
+        dx - waveWidth / 2, // اليسار
+        topDy, // الأعلى
+        dx + waveWidth / 2, // اليمين
+        bottomDy, // الأسفل
+        const Radius.circular(borderRadius), // حواف دائرية
       );
+
+      canvas.drawRRect(rrect, paint);
     }
   }
 }

@@ -244,43 +244,30 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
       clipBehavior: widget.clipBehavior,
       child: Stack(
         children: [
-          Container(
-            color: Colors.amber,
-            child: GestureDetector(
-              onHorizontalDragUpdate:
-                  widget.enableSeekGesture ? _handleDragGestures : null,
-              onTapUp:
-                  widget.enableSeekGesture ? _handleScrubberSeekStart : null,
-              onHorizontalDragStart:
-                  widget.enableSeekGesture ? _handleHorizontalDragStart : null,
-              onHorizontalDragEnd:
-                  widget.enableSeekGesture ? _handleOnDragEnd : null,
-              child: ClipPath(
-                clipper: WaveClipper(extraClipperHeight: 0),
-                child: RepaintBoundary(
-                  child: ValueListenableBuilder<int>(
-                    builder: (_, __, ___) {
-                      return CustomPaint(
-                        isComplex: true,
-                        painter: PlayerWavePainter(
-                          playerWaveStyle: playerWaveStyle,
-                          waveformData: _waveformData,
-                          animValue: _growAnimationProgress,
-                          totalBackDistance: _totalBackDistance,
-                          dragOffset: _dragOffset,
-                          audioProgress: _audioProgress,
-                          callPushback: !_isScrolled,
-                          pushBack: _pushBackWave,
-                          scrollScale: scrollScale,
-                          waveformType: widget.waveformType,
-                          cachedAudioProgress: _cachedAudioProgress,
-                        ),
-                        size: widget.size,
-                      );
-                    },
-                    valueListenable: _seekProgress,
-                  ),
-                ),
+          ClipPath(
+            clipper: WaveClipper(extraClipperHeight: 0),
+            child: RepaintBoundary(
+              child: ValueListenableBuilder<int>(
+                builder: (_, __, ___) {
+                  return CustomPaint(
+                    isComplex: true,
+                    painter: PlayerWavePainter(
+                      playerWaveStyle: playerWaveStyle,
+                      waveformData: _waveformData,
+                       animValue: _growAnimationProgress,
+                      totalBackDistance: _totalBackDistance,
+                      dragOffset: _dragOffset,
+                      audioProgress: _audioProgress,
+                      callPushback: !_isScrolled,
+                      pushBack: _pushBackWave,
+                      scrollScale: scrollScale,
+                      waveformType: widget.waveformType,
+                      cachedAudioProgress: _cachedAudioProgress,
+                    ),
+                    size: widget.size,
+                  );
+                },
+                valueListenable: _seekProgress,
               ),
             ),
           ),

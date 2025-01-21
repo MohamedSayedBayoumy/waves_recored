@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 
@@ -47,7 +48,6 @@ class AudioFileWaveforms extends StatefulWidget {
   final Color? backgroundColor;
 
   /// Duration for animation. Defaults to 500 milliseconds.
-  final Duration animationDuration;
 
   /// Curve for animation. Defaults to Curves.easeIn
   final Curve animationCurve;
@@ -73,6 +73,7 @@ class AudioFileWaveforms extends StatefulWidget {
 
   /// Provides a callback when tapping on the waveform.
   final Function(TapUpDetails)? tapUpUpdateDetails;
+  final String? fileAudio;
 
   /// Generate waveforms from audio file. You play those audio file using
   /// [PlayerController].
@@ -97,7 +98,6 @@ class AudioFileWaveforms extends StatefulWidget {
     this.margin,
     this.decoration,
     this.backgroundColor,
-    this.animationDuration = const Duration(milliseconds: 500),
     this.animationCurve = Curves.easeIn,
     this.clipBehavior = Clip.none,
     this.waveformType = WaveformType.long,
@@ -108,6 +108,7 @@ class AudioFileWaveforms extends StatefulWidget {
     this.tapUpUpdateDetails,
     this.fileSize = "",
     this.style,
+    required this.fileAudio,
   });
 
   @override
@@ -116,10 +117,6 @@ class AudioFileWaveforms extends StatefulWidget {
 
 class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     with SingleTickerProviderStateMixin {
-  late AnimationController _growingWaveController;
-  late Animation<double> _growAnimation;
-
-  double _growAnimationProgress = 0.0;
   final ValueNotifier<int> _seekProgress = ValueNotifier(0);
   bool showSeekLine = false;
 
@@ -127,7 +124,6 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
   late EdgeInsets? padding;
   late BoxDecoration? decoration;
   late Color? backgroundColor;
-  late Duration? animationDuration;
   late Curve? animationCurve;
   late Clip? clipBehavior;
   late StreamSubscription<int> onCurrentDurationSubscription;
@@ -146,19 +142,8 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
   @override
   void initState() {
     super.initState();
-    _initialiseVariables();
-    _growingWaveController = AnimationController(
-      vsync: this,
-      duration: widget.animationDuration,
-    );
-    _growAnimation = CurvedAnimation(
-      parent: _growingWaveController,
-      curve: widget.animationCurve,
-    );
 
-    _growingWaveController
-      ..forward()
-      ..addListener(_updateGrowAnimationProgress);
+    _initialiseVariables();
 
     onCurrentDurationSubscription =
         playerController.onCurrentDurationChanged.listen((event) {
@@ -191,6 +176,9 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
             .listen(_addWaveformData);
       }
     }
+    onCurrentExtractedWaveformData!.onDone(() {
+      log("message>>>>>>>>>>>>>>>>>>>>>>>. is done stream");
+    });
     WidgetsBinding.instance.addPostFrameCallback((time) async {
       await getduration();
     });
@@ -201,8 +189,8 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     onCurrentDurationSubscription.cancel();
     onCurrentExtractedWaveformData?.cancel();
     onCompletionSubscription.cancel();
-    playerController.removeListener(_addWaveformDataFromController);
-    _growingWaveController.dispose();
+    playerController
+        .removeListener(() => _addWaveformDataFromController(isDispose: true));
     silderStreamController.close();
     timerStreamController.close();
 
@@ -226,10 +214,9 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
   StreamController<int> silderStreamController = StreamController<int>();
 
   int durationFile = 0;
-  getduration() async {
-    final duration = await playerController.getDuration();
-    durationFile = duration;
-    setState(() {});
+  Future<void> getduration() async {
+    durationFile = await playerController.getDuration();
+    log("message>>>>>>>>>>>>> durationFile $durationFile");
   }
 
   @override
@@ -250,12 +237,111 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
                     painter: PlayerWavePainter(
                       playerWaveStyle: playerWaveStyle,
                       waveformData: _waveformData,
-                      animValue: _growAnimationProgress,
+                      // [
+                      //   0.08094660192728043,
+                      //   0.06582608819007874,
+                      //   0.06829135119915009,
+                      //   0.07795902341604233,
+                      //   0.0613601878285408,
+                      //   0.08147887140512466,
+                      //   0.07330138236284256,
+                      //   0.06941984593868256,
+                      //   0.10907264798879623,
+                      //   0.08663133531808853,
+                      //   0.10842423141002655,
+                      //   0.07830434292554855,
+                      //   0.07001353055238724,
+                      //   0.07266294956207275,
+                      //   0.09277749806642532,
+                      //   0.06480734050273895,
+                      //   0.08314724266529083,
+                      //   0.06386280804872513,
+                      //   0.06504005938768387,
+                      //   0.08759556710720062,
+                      //   0.08024410158395767,
+                      //   0.09636557847261429,
+                      //   0.08150824159383774,
+                      //   0.07929716259241104,
+                      //   0.09534493833780289,
+                      //   0.09916909039020538,
+                      //   0.08795736730098724,
+                      //   0.09170526266098022,
+                      //   0.09836561977863312,
+                      //   0.09577436000108719,
+                      //   0.09918149560689926,
+                      //   0.07969027757644653,
+                      //   0.14972232282161713,
+                      //   0.19466519355773926,
+                      //   0.19722683727741241,
+                      //   0.19960136711597443,
+                      //   0.2042304277420044,
+                      //   0.1977429986000061,
+                      //   0.19517944753170013,
+                      //   0.19365133345127106,
+                      //   0.19805747270584106,
+                      //   0.2044951468706131,
+                      //   0.14581744372844696,
+                      //   0.1517835557460785,
+                      //   0.19356299936771393,
+                      //   0.1999235302209854,
+                      //   0.19596055150032043,
+                      //   0.19960768520832062,
+                      //   0.19970081746578217,
+                      //   0.2018519639968872,
+                      //   0.19708538055419922,
+                      //   0.19701912999153137,
+                      //   0.1928798258304596,
+                      //   0.19304847717285156,
+                      //   0.10400137305259705,
+                      //   0.11166584491729736,
+                      //   0.11294949799776077,
+                      //   0.11211550235748291,
+                      //   0.10790254175662994,
+                      //   0.11839986592531204,
+                      //   0.13031291961669922,
+                      //   0.11842246353626251,
+                      //   0.12830016016960144,
+                      //   0.14604580402374268,
+                      //   0.1456572264432907,
+                      //   0.11745446175336838,
+                      //   0.1029864102602005,
+                      //   0.11209825426340103,
+                      //   0.11743009090423584,
+                      //   0.11296277493238449,
+                      //   0.09894987940788269,
+                      //   0.12905935943126678,
+                      //   0.12406527251005173,
+                      //   0.12315776944160461,
+                      //   0.1438521146774292,
+                      //   0.16044774651527405,
+                      //   0.13645318150520325,
+                      //   0.14221514761447906,
+                      //   0.17109590768814087,
+                      //   0.21429523825645447,
+                      //   0.20193345844745636,
+                      //   0.2063133269548416,
+                      //   0.21653521060943604,
+                      //   0.21035243570804596,
+                      //   0.21102508902549744,
+                      //   0.21671923995018005,
+                      //   0.19016636908054352,
+                      //   0.1914316862821579,
+                      //   0.19478552043437958,
+                      //   0.18995583057403564,
+                      //   0.19996510446071625,
+                      //   0.19438304007053375,
+                      //   0.20398354530334473,
+                      //   0.19489559531211853,
+                      //   0.19617988169193268,
+                      //   0.1841927468776703,
+                      //   0.1776404231786728,
+                      //   0.15813423693180084,
+                      //   0.05661311373114586
+                      // ],
                       totalBackDistance: _totalBackDistance,
                       dragOffset: _dragOffset,
                       audioProgress: _audioProgress,
                       callPushback: !_isScrolled,
-                      pushBack: _pushBackWave,
                       scrollScale: scrollScale,
                       waveformType: widget.waveformType,
                       cachedAudioProgress: _cachedAudioProgress,
@@ -354,22 +440,16 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     }
   }
 
-  void _addWaveformDataFromController() =>
+  void _addWaveformDataFromController({isDispose = false}) =>
       _addWaveformData(playerController.waveformData);
 
-  void _updateGrowAnimationProgress() {
-    if (mounted) {
-      setState(() {
-        _growAnimationProgress = _growAnimation.value;
-      });
-    }
-  }
-
-  void _addWaveformData(List<double> data) {
+  void _addWaveformData(List<double> data, {isDispose = false}) {
     _waveformData
       ..clear()
       ..addAll(data);
-    if (mounted) setState(() {});
+    if (isDispose == false) {
+      if (mounted) setState(() {});
+    }
   }
 
   /// This initialises variable in [initState] so that everytime current duration
@@ -385,7 +465,6 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     padding = widget.padding;
     decoration = widget.decoration;
     backgroundColor = widget.backgroundColor;
-    animationDuration = widget.animationDuration;
     animationCurve = widget.animationCurve;
     clipBehavior = widget.clipBehavior;
   }

@@ -1,14 +1,14 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 
 import '../../audio_waveforms.dart';
 
 class PlayerWavePainter extends CustomPainter {
   final List<double> waveformData;
-  final double animValue;
   final Offset totalBackDistance;
   final Offset dragOffset;
   final double audioProgress;
-  final VoidCallback pushBack;
   final bool callPushback;
   final double emptySpace;
   final double scrollScale;
@@ -18,11 +18,9 @@ class PlayerWavePainter extends CustomPainter {
 
   PlayerWavePainter({
     required this.waveformData,
-    required this.animValue,
     required this.dragOffset,
     required this.totalBackDistance,
     required this.audioProgress,
-    required this.pushBack,
     required this.callPushback,
     required this.scrollScale,
     required this.waveformType,
@@ -68,9 +66,9 @@ class PlayerWavePainter extends CustomPainter {
     final spacing =
         (size.width - 6.0) / (reducedLength - 1); // حساب المسافة بشكل ديناميكي
 
-    if (cachedAudioProgress != audioProgress) {
-      pushBack();
-    }
+    // if (cachedAudioProgress != audioProgress) {
+    //   pushBack();
+    // }
 
     for (int i = 0; i < reducedLength; i++) {
       // اختيار البيانات بناءً على الـ step
